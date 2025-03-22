@@ -15,7 +15,7 @@ class FaceExpressionAnalyzer:
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         
         # Create directory structure for custom dataset if it doesn't exist
-        dataset_path = Path('./dataset')
+        dataset_path = Path('./Hack_data')
         if not dataset_path.exists():
             try:
                 os.makedirs(dataset_path, exist_ok=True)

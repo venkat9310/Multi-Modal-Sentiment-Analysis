@@ -32,7 +32,7 @@ class TensorFlowModelTrainer:
     
     def __init__(self):
         """Initialize the emotion model trainer"""
-        self.dataset_path = Path('./dataset')
+        self.dataset_path = Path('./Hack_data')
         self.model_path = Path('./models/facial_expression_model.h5')
         self.emotions = ['anger', 'happy', 'sad', 'surprise', 'fear']
         self.img_size = (48, 48)

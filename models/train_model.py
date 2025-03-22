@@ -14,7 +14,7 @@ class ModelTrainer:
     
     def __init__(self):
         """Initialize the model trainer"""
-        self.dataset_path = Path('./dataset')
+        self.dataset_path = Path('./Hack_data')
         self.model_path = Path('./models/custom_emotion_model.xml')
         self.emotions = ['anger', 'happy', 'sad', 'surprise', 'fear']
         
