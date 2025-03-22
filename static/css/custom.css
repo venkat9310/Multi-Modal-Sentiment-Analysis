@@ -1,0 +1,115 @@
+/* Custom CSS styles for the Sentiment Analysis App */
+
+/* Additional spacing for main container */
+.main-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* Card styling */
+.analysis-card {
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+    height: 100%;
+}
+
+.analysis-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Input section styling */
+.input-section {
+    margin-bottom: 2rem;
+}
+
+/* Result indicators */
+.sentiment-indicator {
+    width: 100%;
+    height: 10px;
+    border-radius: 5px;
+    margin-bottom: 0.5rem;
+}
+
+.positive-indicator {
+    background: linear-gradient(to right, var(--bs-success), var(--bs-success-rgb));
+}
+
+.neutral-indicator {
+    background: linear-gradient(to right, var(--bs-warning), var(--bs-warning-rgb));
+}
+
+.negative-indicator {
+    background: linear-gradient(to right, var(--bs-danger), var(--bs-danger-rgb));
+}
+
+/* Image preview container */
+.image-preview-container {
+    width: 100%;
+    min-height: 200px;
+    border: 2px dashed var(--bs-border-color);
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.image-preview {
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+}
+
+/* Camera capture button */
+.camera-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+/* Results section */
+.results-section {
+    display: none;
+}
+
+/* Emotion icons */
+.emotion-icon {
+    font-size: 1.5rem;
+    margin-right: 0.5rem;
+}
+
+/* Loader animation */
+.loader {
+    border: 5px solid var(--bs-border-color);
+    border-top: 5px solid var(--bs-primary);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+    display: none;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error message styling */
+.error-message {
+    color: var(--bs-danger);
+    margin-top: 1rem;
+    display: none;
+}
+
+/* Canvas for video display */
+#videoElement {
+    width: 100%;
+    max-height: 300px;
+    display: none;
+    border-radius: 5px;
+}

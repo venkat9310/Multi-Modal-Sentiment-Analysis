@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis Dashboard</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body>
+    <div class="container main-container">
+        <header class="text-center mb-5">
+            <h1 class="display-4">Multi-Modal Sentiment Analysis</h1>
+            <p class="lead">Analyze emotions from both text and facial expressions</p>
+        </header>
+        
+        <div class="row">
+            <!-- Input Section -->
+            <div class="col-lg-6 input-section">
+                <div class="card analysis-card">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="card-title mb-0"><i class="fas fa-keyboard me-2"></i>Text Analysis</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="textInput" class="form-label">Enter text to analyze:</label>
+                            <textarea class="form-control" id="textInput" rows="5" placeholder="Type something to analyze its sentiment..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card analysis-card mt-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h3 class="card-title mb-0"><i class="fas fa-camera me-2"></i>Facial Expression Analysis</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="image-preview-container" id="previewContainer">
+                            <img id="imagePreview" class="image-preview" style="display: none;" alt="Image Preview">
+                            <video id="videoElement" autoplay muted playsinline></video>
+                            <button id="captureBtn" class="btn btn-primary camera-btn" style="display: none;">
+                                <i class="fas fa-camera"></i> Capture
+                            </button>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <div class="input-group mb-3">
+                                <input type="file" class="form-control" id="imageUpload" accept="image/*">
+                                <button class="btn btn-outline-secondary" type="button" id="cameraBtn">
+                                    <i class="fas fa-video"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 mt-4">
+                    <button id="analyzeBtn" class="btn btn-success btn-lg">
+                        <i class="fas fa-search me-2"></i>Analyze Sentiment
+                    </button>
+                </div>
+                
+                <!-- Loader -->
+                <div id="loader" class="loader mt-4"></div>
+                
+                <!-- Error Message -->
+                <div id="errorMessage" class="alert alert-danger mt-4 error-message"></div>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="col-lg-6 results-section" id="resultsSection">
+                <div class="card analysis-card">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="card-title mb-0"><i class="fas fa-chart-pie me-2"></i>Analysis Results</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Text Sentiment Results -->
+                        <div id="textResults" class="mb-4">
+                            <h4 class="border-bottom pb-2">Text Sentiment</h4>
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <p class="mb-1">Sentiment: <span id="textSentimentLabel" class="fw-bold">-</span></p>
+                                        <p class="mb-1">Score: <span id="textSentimentScore" class="fw-bold">-</span></p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <canvas id="textSentimentChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Facial Expression Results -->
+                        <div id="imageResults" class="mb-4">
+                            <h4 class="border-bottom pb-2">Facial Expression</h4>
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <p class="mb-1">Primary Emotion: <span id="primaryEmotion" class="fw-bold">-</span></p>
+                                        <p class="mb-1">Sentiment: <span id="faceSentimentLabel" class="fw-bold">-</span></p>
+                                        <p class="mb-1">Score: <span id="faceSentimentScore" class="fw-bold">-</span></p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <canvas id="faceEmotionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Combined Results -->
+                        <div id="combinedResults">
+                            <h4 class="border-bottom pb-2">Combined Analysis</h4>
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <p class="mb-1">Overall Sentiment: <span id="combinedSentimentLabel" class="fw-bold">-</span></p>
+                                        <p class="mb-1">Combined Score: <span id="combinedSentimentScore" class="fw-bold">-</span></p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <canvas id="combinedSentimentChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Reset Button -->
+                        <div class="d-grid gap-2 mt-4">
+                            <button id="resetBtn" class="btn btn-outline-danger">
+                                <i class="fas fa-redo-alt me-2"></i>Reset Analysis
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="mt-5 text-center text-muted">
+            <p>Multi-Modal Sentiment Analysis Dashboard &copy; 2023</p>
+        </footer>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
