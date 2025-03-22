@@ -16,6 +16,47 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    
+    <style>
+        .emotion-badge {
+            display: inline-block;
+            padding: 1rem 2rem;
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            background-color: var(--bs-secondary-bg);
+            transition: all 0.3s ease;
+        }
+        
+        .emotion-badge.happy {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: var(--bs-success);
+            border: 1px solid var(--bs-success);
+        }
+        
+        .emotion-badge.angry {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: var(--bs-danger);
+            border: 1px solid var(--bs-danger);
+        }
+        
+        .emotion-badge.sad {
+            background-color: rgba(108, 117, 125, 0.2);
+            color: var(--bs-secondary);
+            border: 1px solid var(--bs-secondary);
+        }
+        
+        .emotion-badge.surprise {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: var(--bs-warning);
+            border: 1px solid var(--bs-warning);
+        }
+        
+        .emotion-badge.fear {
+            background-color: rgba(111, 66, 193, 0.2);
+            color: var(--bs-purple);
+            border: 1px solid var(--bs-purple);
+        }
+    </style>
 </head>
 <body>
     <div class="container main-container">
@@ -111,12 +152,21 @@
                         <!-- Facial Expression Results -->
                         <div id="imageResults" class="mb-4">
                             <h4 class="border-bottom pb-2">Facial Expression</h4>
+                            <div class="row">
+                                <div class="col-12 text-center mb-3">
+                                    <div class="emotion-badge" id="emotionBadge">
+                                        <h3 id="primaryEmotionLarge" class="display-5 mb-0">-</h3>
+                                        <p class="text-muted mb-0">Detected Emotion</p>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="row align-items-center">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <p class="mb-1">Primary Emotion: <span id="primaryEmotion" class="fw-bold">-</span></p>
                                         <p class="mb-1">Sentiment: <span id="faceSentimentLabel" class="fw-bold">-</span></p>
                                         <p class="mb-1">Score: <span id="faceSentimentScore" class="fw-bold">-</span></p>
+                                        <p class="mb-1">Confidence: <span id="faceConfidence" class="fw-bold">-</span></p>
                                     </div>
                                 </div>
                                 <div class="col-md-6">

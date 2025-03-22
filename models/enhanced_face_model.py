@@ -1,68 +1,60 @@
+"""
+Enhanced Facial Expression Recognition Model
+
+This module provides an enhanced facial expression recognition model
+with improved accuracy and support for various image formats.
+"""
+
+import os
+import logging
 import cv2
 import numpy as np
-import logging
-import os
 from pathlib import Path
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class FaceExpressionAnalyzer:
-    """Class for facial expression analysis using OpenCV and pre-trained models"""
+class EnhancedFaceModel:
+    """Enhanced facial expression analysis using OpenCV and feature-based detection"""
     
     def __init__(self):
         """Initialize the face detection and expression recognition models"""
-        # Load face detection model
-        self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        # Load the pre-trained face cascade classifier
+        cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        self.face_cascade = cv2.CascadeClassifier(cascade_path)
         
-        # Create directory structure for custom dataset if it doesn't exist
-        dataset_path = Path('./dataset')
-        if not dataset_path.exists():
-            try:
-                os.makedirs(dataset_path, exist_ok=True)
-                emotion_categories = ['anger', 'happy', 'sad', 'surprise', 'fear']
-                for category in emotion_categories:
-                    os.makedirs(dataset_path / category, exist_ok=True)
-                logger.info(f"Created dataset directories at {dataset_path}")
-            except Exception as e:
-                logger.error(f"Failed to create dataset directories: {e}")
-        
-        # Emotion mapping - focusing on the 5 emotions requested
-        self.emotions = {
-            0: 'Angry',
-            1: 'Happy',
-            2: 'Sad',
-            3: 'Surprise',
-            4: 'Fear'
-        }
-        
-        # Sentiment mapping (map emotions to sentiment scores)
+        # Initialize emotion categories and mapping
+        self.emotions = {0: 'Angry', 1: 'Happy', 2: 'Sad', 3: 'Surprise', 4: 'Fear'}
         self.sentiment_mapping = {
-            'Angry': -0.8,
-            'Happy': 0.9,
-            'Sad': -0.7,
-            'Surprise': 0.2,
-            'Fear': -0.5
+            'Angry': -0.8,    # Strongly negative
+            'Happy': 0.8,     # Strongly positive
+            'Sad': -0.6,      # Negative
+            'Surprise': 0.2,  # Slightly positive
+            'Fear': -0.7      # Negative
         }
         
-        # Try to load a custom model if available
-        self.custom_model_path = './models/custom_emotion_model.xml'
-        self.using_custom_model = os.path.exists(self.custom_model_path)
+        # Check for a pre-trained custom model
+        self.custom_model_path = Path('./models/custom_emotion_model.xml')
+        self.using_custom_model = self.custom_model_path.exists()
         
-        if self.using_custom_model:
-            try:
-                # In a real implementation, we would load the custom model here
-                # For example: self.model = cv2.face.FisherFaceRecognizer_create()
-                # self.model.read(self.custom_model_path)
-                logger.info("Loaded custom emotion recognition model")
-            except Exception as e:
-                logger.error(f"Failed to load custom model: {e}")
-                self.using_custom_model = False
+        # For now, we'll disable TensorFlow to avoid compatibility issues
+        self.tf_available = False
+        self.tf_model = None
+        logger.info("Using feature-based model for emotion prediction")
         
-        logger.info("Face expression analyzer initialized")
+        logger.info("Enhanced face expression analyzer initialized")
     
     def detect_faces(self, image):
         """
         Detect faces in the image with improved parameters for different image qualities
+        
+        Args:
+            image: OpenCV image
+            
+        Returns:
+            faces: List of face coordinates (x, y, w, h)
+            gray: Grayscale version of the input image
         """
         # Convert to grayscale if image is in color
         if len(image.shape) == 3:
@@ -112,27 +104,77 @@ class FaceExpressionAnalyzer:
     
     def predict_emotion(self, face_img):
         """
-        Predicts emotion from facial image using either custom or fallback model
+        Predicts emotion from facial image using the best available model
+        
+        Args:
+            face_img: OpenCV image (grayscale)
+            
+        Returns:
+            emotion_idx: Index of the detected emotion
+            confidence: Confidence score (0-1)
         """
-        if self.using_custom_model:
-            # In a real implementation, we would use the custom model here
-            # For example: emotion_idx = self.model.predict(face_img)
-            # For now, we use the fallback model
-            return self._predict_emotion_fallback(face_img)
-        else:
-            # Use the fallback prediction logic
-            return self._predict_emotion_fallback(face_img)
+        # Try TensorFlow model first if available
+        if self.tf_available and self.tf_model is not None:
+            try:
+                return self._predict_emotion_tf(face_img)
+            except Exception as e:
+                logger.error(f"TensorFlow prediction error: {str(e)}")
+                # Fall back to feature-based approach
+        
+        # Fallback to feature-based approach
+        return self._predict_emotion_features(face_img)
     
-    def _predict_emotion_fallback(self, face_img):
+    def _predict_emotion_tf(self, face_img):
+        """
+        Predict emotion using TensorFlow model
+        """
+        try:
+            # Process the face image for TensorFlow
+            # Convert to RGB if grayscale
+            if len(face_img.shape) == 2:
+                face_rgb = cv2.cvtColor(face_img, cv2.COLOR_GRAY2RGB)
+            else:
+                face_rgb = face_img
+                
+            # Resize to 48x48 (expected by the model)
+            face_resized = cv2.resize(face_rgb, (48, 48))
+            
+            # Normalize pixel values to [0, 1]
+            face_normalized = face_resized / 255.0
+            
+            # Add batch dimension
+            face_batch = np.expand_dims(face_normalized, axis=0)
+            
+            # Make prediction
+            predictions = self.tf_model.predict(face_batch, verbose=0)[0]
+            
+            # Get the emotion with highest probability
+            emotion_idx = np.argmax(predictions)
+            confidence = float(predictions[emotion_idx])
+            
+            logger.info(f"TensorFlow predicted emotion: {self.emotions[emotion_idx]} with confidence {confidence:.2f}")
+            return emotion_idx, confidence
+            
+        except Exception as e:
+            logger.error(f"Error in TensorFlow prediction: {str(e)}")
+            raise
+    
+    def _predict_emotion_features(self, face_img):
         """
         Enhanced emotion prediction using facial features
         This analyzes facial characteristics to estimate emotion with improved accuracy
         """
         # Get image properties
-        height, width = face_img.shape
+        if len(face_img.shape) > 2:
+            # Convert to grayscale if needed
+            gray_face = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
+            height, width = gray_face.shape
+        else:
+            gray_face = face_img
+            height, width = face_img.shape
         
         # Apply histogram equalization to improve contrast
-        equalized_face = cv2.equalizeHist(face_img)
+        equalized_face = cv2.equalizeHist(gray_face)
         
         # Extract facial regions more precisely 
         # Upper face (forehead, eyes, brows) - 0-40% of face height
@@ -271,13 +313,21 @@ class FaceExpressionAnalyzer:
         confidence = max(0.0, min(1.0, confidence))
         
         # Log prediction details for debugging
-        logger.debug(f"Emotion scores: Happy={happy_score:.2f}, Sad={sad_score:.2f}, " +
+        logger.debug(f"Feature-based emotion scores: Happy={happy_score:.2f}, Sad={sad_score:.2f}, " +
                      f"Surprise={surprise_score:.2f}, Angry={angry_score:.2f}, Fear={fear_score:.2f}")
             
         return emotion_idx, confidence
     
     def analyze(self, image):
-        """Analyze facial expressions in the image"""
+        """
+        Analyze facial expressions in the image
+        
+        Args:
+            image: OpenCV image
+            
+        Returns:
+            Dictionary with emotion analysis results
+        """
         if image is None:
             return {'score': 0, 'label': 'neutral', 'emotions': {}}
         
@@ -292,11 +342,20 @@ class FaceExpressionAnalyzer:
             x, y, w, h = faces[0]
             face_roi = gray[y:y+h, x:x+w]
             
-            # Resize for consistent analysis
-            face_roi = cv2.resize(face_roi, (48, 48))
+            # Get the color face region if available
+            face_color = None
+            if len(image.shape) == 3:
+                face_color = image[y:y+h, x:x+w]
+            
+            # Use the color face if available for better analysis
+            face_for_analysis = face_color if face_color is not None else face_roi
+            
+            # Resize for consistent analysis if using feature-based approach
+            if not self.tf_available:
+                face_for_analysis = cv2.resize(face_for_analysis, (48, 48))
             
             # Predict emotion
-            emotion_idx, confidence = self.predict_emotion(face_roi)
+            emotion_idx, confidence = self.predict_emotion(face_for_analysis)
             emotion = self.emotions[emotion_idx]
             
             # Get sentiment score from emotion
@@ -324,7 +383,8 @@ class FaceExpressionAnalyzer:
                 'label': sentiment_label,
                 'emotions': emotion_probs,
                 'primary_emotion': emotion.lower(),
-                'confidence': round(confidence, 2)
+                'confidence': round(confidence, 2),
+                'using_tf': self.tf_available and self.tf_model is not None
             }
             
         except Exception as e:

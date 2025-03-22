@@ -6,7 +6,8 @@ import base64
 import numpy as np
 import cv2
 from io import BytesIO
-from models.face_expression_model import FaceExpressionAnalyzer
+# Import the enhanced face model
+from models.enhanced_face_model import EnhancedFaceModel
 from models.text_sentiment_model import TextSentimentAnalyzer
 from utils.image_processing import process_image
 from utils.text_processing import preprocess_text
@@ -16,7 +17,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "default-secret-key")
 
 # Initialize models
-face_analyzer = FaceExpressionAnalyzer()
+face_analyzer = EnhancedFaceModel()
 text_analyzer = TextSentimentAnalyzer()
 
 logger = logging.getLogger(__name__)
@@ -52,13 +53,41 @@ def analyze():
         # Process image if provided
         if image_data and image_data.startswith('data:image'):
             try:
+                # Log image format for debugging
+                image_format = image_data.split(';')[0].split('/')[1] if ';' in image_data and '/' in image_data.split(';')[0] else "unknown"
+                logger.info(f"Processing image with format: {image_format}")
+                
                 # Extract the base64 encoded data
-                image_data = image_data.split(",")[1]
+                image_data = image_data.split(",")[1] if "," in image_data else image_data
                 image_bytes = base64.b64decode(image_data)
                 
                 # Convert to OpenCV format
                 nparr = np.frombuffer(image_bytes, np.uint8)
-                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                
+                # Try different decode flags for different image formats
+                img = None
+                
+                # Special handling for AVIF or other problematic formats
+                if image_format.lower() in ['avif', 'webp', 'heic', 'heif']:
+                    logger.info(f"Using special handling for {image_format} format")
+                    # Try with IMREAD_UNCHANGED first (preserves alpha channel)
+                    img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
+                    
+                    # If failed or resulted in alpha channel, try with COLOR
+                    if img is None or (len(img.shape) == 3 and img.shape[2] == 4):
+                        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                else:
+                    # Standard handling for common formats
+                    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                
+                # Check if image was successfully decoded
+                if img is None or img.size == 0:
+                    logger.error("Failed to decode image")
+                    results['error'] = "Unable to process image format. Please try a different image or format (JPG/PNG recommended)."
+                    return jsonify(results)
+                
+                # Log the loaded image shape for debugging
+                logger.info(f"Loaded image shape: {img.shape}")
                 
                 # Process the image
                 processed_img = process_image(img)
@@ -67,6 +96,9 @@ def analyze():
                 if processed_img is not None:
                     face_result = face_analyzer.analyze(processed_img)
                     results['face_sentiment'] = face_result
+                else:
+                    logger.error("Image processing failed")
+                    results['error'] = "Image processing failed. Please try a different image."
             except Exception as e:
                 logger.error(f"Error processing image: {str(e)}")
                 results['error'] = f"Error processing image: {str(e)}"
@@ -113,11 +145,16 @@ def dataset_status():
         dataset_path = Path('./dataset')
         dataset_exists = dataset_path.exists()
         
+        tf_model_exists = os.path.exists('./models/facial_expression_model.h5')
+        xml_model_exists = os.path.exists('./models/custom_emotion_model.xml')
+        
         status = {
             'dataset_exists': dataset_exists,
             'categories': [],
             'total_images': 0,
-            'model_trained': os.path.exists('./models/custom_emotion_model.xml')
+            'tensorflow_model': tf_model_exists,
+            'opencv_model': xml_model_exists,
+            'model_trained': tf_model_exists or xml_model_exists
         }
         
         if dataset_exists:

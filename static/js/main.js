@@ -107,10 +107,10 @@ function initializeCharts() {
     faceChart = new Chart(faceCtx, {
         type: 'radar',
         data: {
-            labels: ['Happy', 'Sad', 'Angry', 'Surprise', 'Fear', 'Disgust', 'Neutral'],
+            labels: ['Happy', 'Sad', 'Angry', 'Surprise', 'Fear'],
             datasets: [{
                 label: 'Emotion Probability',
-                data: [0, 0, 0, 0, 0, 0, 0],
+                data: [0, 0, 0, 0, 0],
                 backgroundColor: 'rgba(13, 110, 253, 0.2)',
                 borderColor: 'rgba(13, 110, 253, 1)',
                 pointBackgroundColor: 'rgba(13, 110, 253, 1)',
@@ -499,16 +499,17 @@ function displayImageResults(data) {
     if (data.face_sentiment && data.face_sentiment.emotions) {
         imageResults.style.display = 'block';
         
-        // Extract emotion values in the correct order
+        // Extract emotion values in the correct order (for 5 emotions)
         const emotions = [
             data.face_sentiment.emotions.happy || 0,
             data.face_sentiment.emotions.sad || 0,
             data.face_sentiment.emotions.angry || 0,
             data.face_sentiment.emotions.surprise || 0,
-            data.face_sentiment.emotions.fear || 0,
-            data.face_sentiment.emotions.disgust || 0,
-            data.face_sentiment.emotions.neutral || 0
+            data.face_sentiment.emotions.fear || 0
         ];
+        
+        // Update chart labels to match our 5 emotions
+        faceChart.data.labels = ['Happy', 'Sad', 'Angry', 'Surprise', 'Fear'];
         
         // Update chart data
         faceChart.data.datasets[0].data = emotions;
@@ -518,9 +519,29 @@ function displayImageResults(data) {
         document.getElementById('faceSentimentLabel').textContent = data.face_sentiment.label.charAt(0).toUpperCase() + data.face_sentiment.label.slice(1);
         document.getElementById('faceSentimentScore').textContent = data.face_sentiment.score;
         
+        // Update confidence
+        if (data.face_sentiment.confidence) {
+            document.getElementById('faceConfidence').textContent = 
+                Math.round(data.face_sentiment.confidence * 100) + '%';
+        }
+        
         // Update primary emotion if available
         if (data.face_sentiment.primary_emotion) {
-            document.getElementById('primaryEmotion').textContent = data.face_sentiment.primary_emotion.charAt(0).toUpperCase() + data.face_sentiment.primary_emotion.slice(1);
+            const emotionName = data.face_sentiment.primary_emotion;
+            const capitalizedEmotion = emotionName.charAt(0).toUpperCase() + emotionName.slice(1);
+            
+            // Update primary emotion text
+            document.getElementById('primaryEmotion').textContent = capitalizedEmotion;
+            document.getElementById('primaryEmotionLarge').textContent = capitalizedEmotion;
+            
+            // Update emotion badge styling
+            const emotionBadge = document.getElementById('emotionBadge');
+            
+            // Remove all emotion classes
+            emotionBadge.classList.remove('happy', 'sad', 'angry', 'surprise', 'fear');
+            
+            // Add the appropriate emotion class
+            emotionBadge.classList.add(emotionName.toLowerCase());
         }
     } else {
         showError("No face detected in the image.");
@@ -558,16 +579,17 @@ function displayResults(data) {
     if (data.face_sentiment && data.face_sentiment.emotions) {
         imageResults.style.display = 'block';
         
-        // Extract emotion values in the correct order
+        // Extract emotion values in the correct order (for 5 emotions)
         const emotions = [
             data.face_sentiment.emotions.happy || 0,
             data.face_sentiment.emotions.sad || 0,
             data.face_sentiment.emotions.angry || 0,
             data.face_sentiment.emotions.surprise || 0,
-            data.face_sentiment.emotions.fear || 0,
-            data.face_sentiment.emotions.disgust || 0,
-            data.face_sentiment.emotions.neutral || 0
+            data.face_sentiment.emotions.fear || 0
         ];
+        
+        // Update chart labels to match our 5 emotions
+        faceChart.data.labels = ['Happy', 'Sad', 'Angry', 'Surprise', 'Fear'];
         
         // Update chart data
         faceChart.data.datasets[0].data = emotions;
@@ -577,9 +599,29 @@ function displayResults(data) {
         document.getElementById('faceSentimentLabel').textContent = data.face_sentiment.label.charAt(0).toUpperCase() + data.face_sentiment.label.slice(1);
         document.getElementById('faceSentimentScore').textContent = data.face_sentiment.score;
         
+        // Update confidence
+        if (data.face_sentiment.confidence) {
+            document.getElementById('faceConfidence').textContent = 
+                Math.round(data.face_sentiment.confidence * 100) + '%';
+        }
+        
         // Update primary emotion if available
         if (data.face_sentiment.primary_emotion) {
-            document.getElementById('primaryEmotion').textContent = data.face_sentiment.primary_emotion.charAt(0).toUpperCase() + data.face_sentiment.primary_emotion.slice(1);
+            const emotionName = data.face_sentiment.primary_emotion;
+            const capitalizedEmotion = emotionName.charAt(0).toUpperCase() + emotionName.slice(1);
+            
+            // Update primary emotion text
+            document.getElementById('primaryEmotion').textContent = capitalizedEmotion;
+            document.getElementById('primaryEmotionLarge').textContent = capitalizedEmotion;
+            
+            // Update emotion badge styling
+            const emotionBadge = document.getElementById('emotionBadge');
+            
+            // Remove all emotion classes
+            emotionBadge.classList.remove('happy', 'sad', 'angry', 'surprise', 'fear');
+            
+            // Add the appropriate emotion class
+            emotionBadge.classList.add(emotionName.toLowerCase());
         }
     } else {
         imageResults.style.display = 'none';
@@ -636,8 +678,17 @@ function resetAnalysis() {
     
     // Reset charts to empty data
     textChart.data.datasets[0].data = [0, 0, 0];
-    faceChart.data.datasets[0].data = [0, 0, 0, 0, 0, 0, 0];
+    faceChart.data.datasets[0].data = [0, 0, 0, 0, 0];
     combinedChart.data.datasets[0].data = [0, 0, 0];
+    
+    // Reset emotion badge
+    const emotionBadge = document.getElementById('emotionBadge');
+    emotionBadge.classList.remove('happy', 'sad', 'angry', 'surprise', 'fear');
+    document.getElementById('primaryEmotionLarge').textContent = '-';
+    document.getElementById('primaryEmotion').textContent = '-';
+    document.getElementById('faceSentimentLabel').textContent = '-';
+    document.getElementById('faceSentimentScore').textContent = '-';
+    document.getElementById('faceConfidence').textContent = '-';
     
     textChart.update();
     faceChart.update();
