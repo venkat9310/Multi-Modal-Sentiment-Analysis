@@ -6,21 +6,27 @@ import base64
 import numpy as np
 import cv2
 from io import BytesIO
-# Import the enhanced face model
+# Import models
 from models.enhanced_face_model import EnhancedFaceModel
 from models.text_sentiment_model import TextSentimentAnalyzer
 from utils.image_processing import process_image
 from utils.text_processing import preprocess_text
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "default-secret-key")
 
-# Initialize models
+# Initialize face analyzer with feature-based model
+# Note: TensorFlow model can be integrated later when the environment supports it
+logger.info("Using enhanced feature-based model for facial analysis")
 face_analyzer = EnhancedFaceModel()
-text_analyzer = TextSentimentAnalyzer()
 
-logger = logging.getLogger(__name__)
+# Initialize text analyzer
+text_analyzer = TextSentimentAnalyzer()
 
 @app.route('/')
 def index():
