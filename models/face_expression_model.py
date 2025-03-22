@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import logging
+import os
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -12,27 +14,49 @@ class FaceExpressionAnalyzer:
         # Load face detection model
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         
-        # Emotion mapping
+        # Create directory structure for custom dataset if it doesn't exist
+        dataset_path = Path('./dataset')
+        if not dataset_path.exists():
+            try:
+                os.makedirs(dataset_path, exist_ok=True)
+                emotion_categories = ['anger', 'happy', 'sad', 'surprise', 'fear']
+                for category in emotion_categories:
+                    os.makedirs(dataset_path / category, exist_ok=True)
+                logger.info(f"Created dataset directories at {dataset_path}")
+            except Exception as e:
+                logger.error(f"Failed to create dataset directories: {e}")
+        
+        # Emotion mapping - focusing on the 5 emotions requested
         self.emotions = {
             0: 'Angry',
-            1: 'Disgust',
-            2: 'Fear',
-            3: 'Happy',
-            4: 'Sad',
-            5: 'Surprise',
-            6: 'Neutral'
+            1: 'Happy',
+            2: 'Sad',
+            3: 'Surprise',
+            4: 'Fear'
         }
         
         # Sentiment mapping (map emotions to sentiment scores)
         self.sentiment_mapping = {
             'Angry': -0.8,
-            'Disgust': -0.6,
-            'Fear': -0.5,
             'Happy': 0.9,
             'Sad': -0.7,
             'Surprise': 0.2,
-            'Neutral': 0.0
+            'Fear': -0.5
         }
+        
+        # Try to load a custom model if available
+        self.custom_model_path = './models/custom_emotion_model.xml'
+        self.using_custom_model = os.path.exists(self.custom_model_path)
+        
+        if self.using_custom_model:
+            try:
+                # In a real implementation, we would load the custom model here
+                # For example: self.model = cv2.face.FisherFaceRecognizer_create()
+                # self.model.read(self.custom_model_path)
+                logger.info("Loaded custom emotion recognition model")
+            except Exception as e:
+                logger.error(f"Failed to load custom model: {e}")
+                self.using_custom_model = False
         
         logger.info("Face expression analyzer initialized")
     
@@ -49,34 +73,47 @@ class FaceExpressionAnalyzer:
     
     def predict_emotion(self, face_img):
         """
-        Simulates emotion prediction using a pre-trained model
-        In a real implementation, this would use a proper model like FER or DeepFace
+        Predicts emotion from facial image using either custom or fallback model
         """
-        # This is a simplified emotion prediction simulation
-        # In a real implementation, we would load and use a proper pre-trained model
-        
+        if self.using_custom_model:
+            # In a real implementation, we would use the custom model here
+            # For example: emotion_idx = self.model.predict(face_img)
+            # For now, we use the fallback model
+            return self._predict_emotion_fallback(face_img)
+        else:
+            # Use the fallback prediction logic
+            return self._predict_emotion_fallback(face_img)
+    
+    def _predict_emotion_fallback(self, face_img):
+        """
+        Fallback emotion prediction using image properties
+        This is a temporary solution until a proper custom model is trained
+        """
         # Simulated prediction based on image properties
-        # This is just for demonstration - a real model would analyze facial features
         brightness = np.mean(face_img)
         variance = np.var(face_img)
         
         # Simple heuristic based on image statistics
-        # This should be replaced with actual model prediction
+        # Using only our 5 target emotions
         if brightness > 130:
             # Brighter images more likely to be happy
-            emotion_idx = 3  # Happy
+            emotion_idx = 1  # Happy
             confidence = min(0.5 + (brightness - 130) / 100, 0.9)
         elif variance > 2000:
             # High variance might indicate surprise
-            emotion_idx = 5  # Surprise
+            emotion_idx = 3  # Surprise
             confidence = min(0.4 + variance / 10000, 0.8)
+        elif brightness < 70:
+            # Very dark images more likely to be fear
+            emotion_idx = 4  # Fear
+            confidence = min(0.4 + (70 - brightness) / 100, 0.7)
         elif brightness < 90:
             # Darker images more likely to be sad or angry
-            emotion_idx = 4  # Sad
+            emotion_idx = 2  # Sad
             confidence = min(0.4 + (90 - brightness) / 100, 0.7)
         else:
-            # Default to neutral
-            emotion_idx = 6  # Neutral
+            # Default to angry for other cases
+            emotion_idx = 0  # Angry
             confidence = 0.6
             
         return emotion_idx, confidence

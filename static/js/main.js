@@ -8,7 +8,9 @@ const cameraBtn = document.getElementById('cameraBtn');
 const captureBtn = document.getElementById('captureBtn');
 const videoElement = document.getElementById('videoElement');
 const textInput = document.getElementById('textInput');
-const analyzeBtn = document.getElementById('analyzeBtn');
+const analyzeTextBtn = document.getElementById('analyzeTextBtn');
+const analyzeImageBtn = document.getElementById('analyzeImageBtn');
+const analyzeCombinedBtn = document.getElementById('analyzeCombinedBtn');
 const resultsSection = document.getElementById('resultsSection');
 const textResults = document.getElementById('textResults');
 const imageResults = document.getElementById('imageResults');
@@ -40,9 +42,17 @@ document.addEventListener('DOMContentLoaded', function() {
         captureBtn.addEventListener('click', captureImage);
     }
     
-    // Analyze button
-    if (analyzeBtn) {
-        analyzeBtn.addEventListener('click', analyzeSentiment);
+    // Analyze buttons
+    if (analyzeTextBtn) {
+        analyzeTextBtn.addEventListener('click', analyzeTextOnly);
+    }
+    
+    if (analyzeImageBtn) {
+        analyzeImageBtn.addEventListener('click', analyzeImageOnly);
+    }
+    
+    if (analyzeCombinedBtn) {
+        analyzeCombinedBtn.addEventListener('click', analyzeBoth);
     }
     
     // Reset button
@@ -286,14 +296,12 @@ function captureImage() {
     }
 }
 
-// Analyze sentiment from text and image
-function analyzeSentiment() {
-    // Check if we have either text or image
-    const hasText = textInput.value.trim() !== '';
-    const hasImage = imagePreview.src && imagePreview.src !== '';
+// Analyze text only
+function analyzeTextOnly() {
+    const text = textInput.value.trim();
     
-    if (!hasText && !hasImage) {
-        showError("Please enter text or upload an image to analyze.");
+    if (!text) {
+        showError("Please enter text to analyze.");
         return;
     }
     
@@ -304,12 +312,7 @@ function analyzeSentiment() {
     
     // Prepare form data
     const formData = new FormData();
-    formData.append('text', textInput.value);
-    
-    // Add image if available
-    if (hasImage) {
-        formData.append('image', imagePreview.src);
-    }
+    formData.append('text', text);
     
     // Send request to backend
     fetch('/analyze', {
@@ -332,14 +335,199 @@ function analyzeSentiment() {
             return;
         }
         
-        // Display results
+        // Hide image and combined results
+        imageResults.style.display = 'none';
+        combinedResults.style.display = 'none';
+        
+        // Display text results
+        displayTextResults(data);
+    })
+    .catch(error => {
+        console.error('Analysis error:', error);
+        loader.style.display = 'none';
+        showError(`Error during text analysis: ${error.message}`);
+    });
+}
+
+// Analyze image only
+function analyzeImageOnly() {
+    const hasImage = imagePreview.src && imagePreview.src !== '';
+    
+    if (!hasImage) {
+        showError("Please upload or capture an image to analyze.");
+        return;
+    }
+    
+    // Show loader
+    loader.style.display = 'block';
+    // Hide any previous error
+    errorMessage.style.display = 'none';
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('image', imagePreview.src);
+    
+    // Send request to backend
+    fetch('/analyze', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Hide loader
+        loader.style.display = 'none';
+        
+        // Check for errors
+        if (data.error) {
+            showError(data.error);
+            return;
+        }
+        
+        // Hide text and combined results
+        textResults.style.display = 'none';
+        combinedResults.style.display = 'none';
+        
+        // Display image results
+        displayImageResults(data);
+    })
+    .catch(error => {
+        console.error('Analysis error:', error);
+        loader.style.display = 'none';
+        showError(`Error during image analysis: ${error.message}`);
+    });
+}
+
+// Analyze both text and image
+function analyzeBoth() {
+    // Check if we have both text and image
+    const hasText = textInput.value.trim() !== '';
+    const hasImage = imagePreview.src && imagePreview.src !== '';
+    
+    if (!hasText && !hasImage) {
+        showError("Please enter text and upload an image to analyze.");
+        return;
+    }
+    
+    if (!hasText) {
+        showError("Please enter text for combined analysis.");
+        return;
+    }
+    
+    if (!hasImage) {
+        showError("Please upload or capture an image for combined analysis.");
+        return;
+    }
+    
+    // Show loader
+    loader.style.display = 'block';
+    // Hide any previous error
+    errorMessage.style.display = 'none';
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('text', textInput.value);
+    formData.append('image', imagePreview.src);
+    
+    // Send request to backend
+    fetch('/analyze', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Hide loader
+        loader.style.display = 'none';
+        
+        // Check for errors
+        if (data.error) {
+            showError(data.error);
+            return;
+        }
+        
+        // Display all results
         displayResults(data);
     })
     .catch(error => {
         console.error('Analysis error:', error);
         loader.style.display = 'none';
-        showError(`Error during analysis: ${error.message}`);
+        showError(`Error during combined analysis: ${error.message}`);
     });
+}
+
+// Display text results only
+function displayTextResults(data) {
+    // Show results section
+    resultsSection.style.display = 'block';
+    
+    // Update text sentiment chart
+    if (data.text_sentiment && data.text_sentiment.score !== 0) {
+        textResults.style.display = 'block';
+        
+        // Update chart data
+        textChart.data.datasets[0].data = [
+            data.text_sentiment.probabilities.positive,
+            data.text_sentiment.probabilities.neutral,
+            data.text_sentiment.probabilities.negative
+        ];
+        textChart.update();
+        
+        // Update text sentiment summary
+        document.getElementById('textSentimentLabel').textContent = data.text_sentiment.label.charAt(0).toUpperCase() + data.text_sentiment.label.slice(1);
+        document.getElementById('textSentimentScore').textContent = data.text_sentiment.score;
+    }
+    
+    // Scroll to results
+    resultsSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Display image results only
+function displayImageResults(data) {
+    // Show results section
+    resultsSection.style.display = 'block';
+    
+    // Update face emotion chart if face was detected
+    if (data.face_sentiment && data.face_sentiment.emotions) {
+        imageResults.style.display = 'block';
+        
+        // Extract emotion values in the correct order
+        const emotions = [
+            data.face_sentiment.emotions.happy || 0,
+            data.face_sentiment.emotions.sad || 0,
+            data.face_sentiment.emotions.angry || 0,
+            data.face_sentiment.emotions.surprise || 0,
+            data.face_sentiment.emotions.fear || 0,
+            data.face_sentiment.emotions.disgust || 0,
+            data.face_sentiment.emotions.neutral || 0
+        ];
+        
+        // Update chart data
+        faceChart.data.datasets[0].data = emotions;
+        faceChart.update();
+        
+        // Update face sentiment summary
+        document.getElementById('faceSentimentLabel').textContent = data.face_sentiment.label.charAt(0).toUpperCase() + data.face_sentiment.label.slice(1);
+        document.getElementById('faceSentimentScore').textContent = data.face_sentiment.score;
+        
+        // Update primary emotion if available
+        if (data.face_sentiment.primary_emotion) {
+            document.getElementById('primaryEmotion').textContent = data.face_sentiment.primary_emotion.charAt(0).toUpperCase() + data.face_sentiment.primary_emotion.slice(1);
+        }
+    } else {
+        showError("No face detected in the image.");
+    }
+    
+    // Scroll to results
+    resultsSection.scrollIntoView({ behavior: 'smooth' });
 }
 
 // Display analysis results
@@ -455,4 +643,3 @@ function resetAnalysis() {
     faceChart.update();
     combinedChart.update();
 }
- 

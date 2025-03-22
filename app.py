@@ -1,5 +1,6 @@
 import os
 import logging
+from pathlib import Path
 from flask import Flask, render_template, request, jsonify
 import base64
 import numpy as np
@@ -27,7 +28,7 @@ def index():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    """Analyze both image and text for sentiment"""
+    """Analyze image and/or text for sentiment based on what's provided"""
     try:
         # Get the text input
         text_input = request.form.get('text', '')
@@ -70,45 +71,79 @@ def analyze():
                 logger.error(f"Error processing image: {str(e)}")
                 results['error'] = f"Error processing image: {str(e)}"
         
-        # Calculate combined sentiment
-        if results['text_sentiment']['score'] != 0 or results['face_sentiment']['score'] != 0:
+        # Calculate combined sentiment only if both text and image are provided
+        has_text = text_input != ''
+        has_image = image_data != '' and image_data.startswith('data:image')
+        
+        if has_text and has_image:
             # Simple weighted average (can be refined based on confidence)
-            text_weight = 0.5 if text_input else 0
-            face_weight = 0.5 if image_data else 0
-            
-            # Adjust weights if only one input is provided
-            if text_input and not image_data.startswith('data:image'):
-                text_weight = 1.0
-                face_weight = 0.0
-            elif image_data.startswith('data:image') and not text_input:
-                text_weight = 0.0
-                face_weight = 1.0
+            text_weight = 0.5
+            face_weight = 0.5
                 
             # Calculate weighted score
-            if text_weight + face_weight > 0:
-                combined_score = (
-                    (text_weight * results['text_sentiment']['score'] + 
-                     face_weight * results['face_sentiment']['score']) / 
-                    (text_weight + face_weight)
-                )
+            combined_score = (
+                (text_weight * results['text_sentiment']['score'] + 
+                 face_weight * results['face_sentiment']['score']) / 
+                (text_weight + face_weight)
+            )
+            
+            # Determine label based on combined score
+            if combined_score >= 0.5:
+                combined_label = 'positive'
+            elif combined_score <= -0.5:
+                combined_label = 'negative'
+            else:
+                combined_label = 'neutral'
                 
-                # Determine label based on combined score
-                if combined_score >= 0.5:
-                    combined_label = 'positive'
-                elif combined_score <= -0.5:
-                    combined_label = 'negative'
-                else:
-                    combined_label = 'neutral'
-                    
-                results['combined_sentiment'] = {
-                    'score': round(combined_score, 2),
-                    'label': combined_label
-                }
+            results['combined_sentiment'] = {
+                'score': round(combined_score, 2),
+                'label': combined_label
+            }
         
         return jsonify(results)
     except Exception as e:
         logger.error(f"Analysis error: {str(e)}")
         return jsonify({'error': f"Analysis error: {str(e)}"}), 500
+
+@app.route('/dataset', methods=['GET'])
+def dataset_status():
+    """Get the status of the dataset and model"""
+    try:
+        # Check dataset directories
+        dataset_path = Path('./dataset')
+        dataset_exists = dataset_path.exists()
+        
+        status = {
+            'dataset_exists': dataset_exists,
+            'categories': [],
+            'total_images': 0,
+            'model_trained': os.path.exists('./models/custom_emotion_model.xml')
+        }
+        
+        if dataset_exists:
+            emotion_categories = ['anger', 'happy', 'sad', 'surprise', 'fear']
+            categories_status = []
+            
+            for emotion in emotion_categories:
+                emotion_dir = dataset_path / emotion
+                image_count = 0
+                
+                if emotion_dir.exists():
+                    image_count = len(list(emotion_dir.glob('*.jpg')))
+                    status['total_images'] += image_count
+                
+                categories_status.append({
+                    'name': emotion,
+                    'exists': emotion_dir.exists(),
+                    'image_count': image_count
+                })
+            
+            status['categories'] = categories_status
+        
+        return jsonify(status)
+    except Exception as e:
+        logger.error(f"Dataset status error: {str(e)}")
+        return jsonify({'error': f"Dataset status error: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
