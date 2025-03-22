@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class EmotionModelTrainer:
     def __init__(self):
         """Initialize the emotion model trainer"""
-        self.dataset_path = Path('./Hack_data')
+        self.dataset_path = Path('./dataset')
         self.model_save_path = Path('./models/custom_emotion_model.xml')
         
         # Ensure the dataset directory exists

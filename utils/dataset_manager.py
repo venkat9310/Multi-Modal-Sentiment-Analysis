@@ -14,7 +14,7 @@ class DatasetManager:
     
     def __init__(self):
         """Initialize the dataset manager"""
-        self.dataset_path = Path('./Hack_data')
+        self.dataset_path = Path('./dataset')
         self.emotions = ['anger', 'happy', 'sad', 'surprise', 'fear']
         
     def create_dataset_structure(self):
