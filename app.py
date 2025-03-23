@@ -146,6 +146,14 @@ def analyze():
                 # Analyze facial expression
                 facial_sentiment, facial_emotions = analyze_facial_expression(image)
                 logger.debug(f"Facial sentiment: {facial_sentiment}")
+                
+                # Check if a face was detected
+                if facial_sentiment is None:
+                    flash('No human facial expression detected in the uploaded image.', 'warning')
+                    # Set a flag to indicate an image was uploaded but no face was detected
+                    session['image_uploaded_no_face'] = True
+                else:
+                    session['image_uploaded_no_face'] = False
             elif file.filename != '':
                 flash('Invalid file format. Please upload a PNG or JPEG image.', 'danger')
         
@@ -171,7 +179,8 @@ def analyze():
                 'score': combined_sentiment,
                 'description': get_sentiment_description(combined_sentiment)
             } if combined_sentiment is not None else None,
-            'chart_image': chart_image
+            'chart_image': chart_image,
+            'image_uploaded_no_face': session.get('image_uploaded_no_face', False)
         }
         
         # Check if we have any data to show

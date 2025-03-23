@@ -190,6 +190,24 @@
                     </div>
                 </div>
             </div>
+            {% elif results.image_uploaded_no_face %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-secondary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-smile me-2"></i>
+                            Facial Expression Results
+                        </h4>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>No human facial expression detected</strong>
+                            <p class="mb-0 mt-2">The system could not detect a human face in the uploaded image.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
             {% endif %}
 
             <!-- Combined Results -->
