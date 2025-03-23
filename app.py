@@ -173,7 +173,7 @@ def analyze():
                     session['used_claude_analysis'] = False
                     facial_sentiment, facial_emotions = analyze_facial_expression(image)
                 
-                # Check if a face was detected with OpenCV when Claude is not available
+                # Check if a face was detected
                 if facial_sentiment is None:
                     flash('No human facial expression detected in the uploaded image.', 'warning')
                     # Set a flag to indicate an image was uploaded but no face was detected
