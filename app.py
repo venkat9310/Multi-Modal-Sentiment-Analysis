@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import numpy as np
 from werkzeug.utils import secure_filename
@@ -182,9 +183,22 @@ def analyze():
                         facial_emotions = emotion_details['emotions']
                         session['used_advanced_analysis'] = True
                         
-                        # Generate and store visualization
+                        # Generate visualization and save to file instead of session
                         visualization = visualize_emotion_analysis(image, emotion_details)
-                        session['emotion_visualization'] = visualization
+                        # Generate unique filename based on timestamp
+                        vis_filename = f"emotion_vis_{int(time.time())}.jpg"
+                        vis_path = os.path.join('static', 'temp', vis_filename)
+                        
+                        # Save base64 image to file if it exists
+                        if visualization and visualization.startswith('data:image/jpeg;base64,'):
+                            # Extract the base64 part
+                            img_data = visualization.split(',')[1]
+                            with open(vis_path, 'wb') as f:
+                                f.write(base64.b64decode(img_data))
+                            # Store just the path in session
+                            session['emotion_visualization_path'] = vis_path
+                        else:
+                            session['emotion_visualization_path'] = None
                         
                         # Store additional details for the UI
                         if 'dominant_emotion' in emotion_details:
@@ -228,7 +242,13 @@ def analyze():
                 'score': facial_sentiment,
                 'description': get_sentiment_description(facial_sentiment),
                 'emotions': facial_emotions,
-                'used_claude': session.get('used_claude_analysis', False)
+                'used_claude': session.get('used_claude_analysis', False),
+                'used_advanced_analysis': session.get('used_advanced_analysis', False),
+                'dominant_emotion': session.get('dominant_emotion', None),
+                'confidence': session.get('emotion_confidence', None),
+                'is_ambiguous': session.get('emotion_ambiguous', False),
+                'ambiguity_explanation': session.get('emotion_explanation', None),
+                'visualization_path': session.get('emotion_visualization_path', None)
             } if facial_sentiment is not None else None,
             'combined_sentiment': {
                 'score': combined_sentiment,
