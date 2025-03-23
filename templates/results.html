@@ -176,14 +176,66 @@
                             {{ results.facial_sentiment.description }}
                         </p>
                         
-                        <!-- Emotion Details Button -->
+                        <!-- Dominant Emotion Display -->
                         {% if results.facial_sentiment.emotions %}
+                        {% set dominant_emotion = results.facial_sentiment.emotions|dictsort(by='value')|reverse|first %}
+                        <div class="mt-4 mb-3">
+                            <h5>Dominant Emotion: 
+                                <span class="emotion-tag">
+                                    {% if dominant_emotion[0] == 'happy' %}
+                                        <i class="fas fa-smile text-success me-1"></i>
+                                    {% elif dominant_emotion[0] == 'sad' %}
+                                        <i class="fas fa-frown text-primary me-1"></i>
+                                    {% elif dominant_emotion[0] == 'angry' %}
+                                        <i class="fas fa-angry text-danger me-1"></i>
+                                    {% elif dominant_emotion[0] == 'surprise' %}
+                                        <i class="fas fa-surprise text-warning me-1"></i>
+                                    {% elif dominant_emotion[0] == 'fear' %}
+                                        <i class="fas fa-grimace text-danger me-1"></i>
+                                    {% elif dominant_emotion[0] == 'disgust' %}
+                                        <i class="fas fa-dizzy text-secondary me-1"></i>
+                                    {% else %}
+                                        <i class="fas fa-meh text-info me-1"></i>
+                                    {% endif %}
+                                    {{ dominant_emotion[0]|title }}
+                                </span>
+                            </h5>
+                        </div>
+                        
+                        <!-- Emotion Bars Mini Display -->
+                        <div class="emotion-mini-bars mb-3">
+                            {% for emotion, value in results.facial_sentiment.emotions.items() %}
+                            {% if value > 5 %}  <!-- Only show emotions with significant values -->
+                            <div class="emotion-mini-item mb-2">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>{{ emotion|title }}</small>
+                                    <small>{{ "%.1f"|format(value) }}%</small>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar 
+                                        {% if emotion == 'happy' %}bg-success
+                                        {% elif emotion == 'sad' %}bg-primary
+                                        {% elif emotion == 'angry' %}bg-danger
+                                        {% elif emotion == 'surprise' %}bg-warning
+                                        {% elif emotion == 'fear' %}bg-danger
+                                        {% elif emotion == 'disgust' %}bg-secondary
+                                        {% else %}bg-info{% endif %}"
+                                        role="progressbar" style="width: {{ value }}%;"
+                                        aria-valuenow="{{ value }}" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Emotion Details Button -->
                         <div class="mt-4">
                             <button type="button" 
                                 class="btn btn-outline-info emotion-details-btn" 
                                 data-emotions='{{ results.facial_sentiment.emotions|tojson }}'>
                                 <i class="fas fa-chart-pie me-2"></i>
-                                View Emotion Details
+                                View Detailed Chart
                             </button>
                         </div>
                         {% endif %}

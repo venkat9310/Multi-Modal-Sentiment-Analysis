@@ -113,8 +113,33 @@ document.addEventListener('DOMContentLoaded', function() {
                     const canvas = document.getElementById('emotionChart');
                     if (canvas) {
                         const ctx = canvas.getContext('2d');
-                        const labels = Object.keys(emotions);
-                        const data = Object.values(emotions);
+                        
+                        // Sort emotions from highest to lowest for better visualization
+                        const sortedEmotions = Object.entries(emotions)
+                            .sort((a, b) => b[1] - a[1])
+                            .reduce((acc, [key, value]) => {
+                                acc[key] = value;
+                                return acc;
+                            }, {});
+                        
+                        const labels = Object.keys(sortedEmotions).map(label => label.charAt(0).toUpperCase() + label.slice(1));
+                        const data = Object.values(sortedEmotions);
+                        
+                        // Map emotion names to colors consistently
+                        const emotionColors = {
+                            'happy': '#28a745',    // green
+                            'neutral': '#17a2b8',  // teal
+                            'surprise': '#ffc107', // yellow
+                            'sad': '#0d6efd',      // blue
+                            'fear': '#fd7e14',     // orange
+                            'disgust': '#6f42c1',  // purple
+                            'angry': '#dc3545'     // red
+                        };
+                        
+                        // Create color array in same order as the labels
+                        const colors = labels.map(label => 
+                            emotionColors[label.toLowerCase()] || '#6c757d'
+                        );
                         
                         new Chart(ctx, {
                             type: 'bar',
@@ -123,25 +148,35 @@ document.addEventListener('DOMContentLoaded', function() {
                                 datasets: [{
                                     label: 'Emotion Scores',
                                     data: data,
-                                    backgroundColor: [
-                                        '#dc3545', // angry - red
-                                        '#6f42c1', // disgust - purple
-                                        '#fd7e14', // fear - orange
-                                        '#6c757d', // sad - gray
-                                        '#ffc107', // surprise - yellow
-                                        '#17a2b8', // neutral - teal
-                                        '#28a745'  // happy - green
-                                    ],
-                                    borderWidth: 1
+                                    backgroundColor: colors,
+                                    borderWidth: 1,
+                                    borderColor: colors.map(color => adjustColor(color, -20))
                                 }]
                             },
                             options: {
                                 responsive: true,
                                 maintainAspectRatio: false,
+                                indexAxis: 'y',  // Horizontal bar chart for better readability
+                                plugins: {
+                                    legend: {
+                                        display: false // Hide legend as colors are self-explanatory
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                return `${context.parsed.x.toFixed(1)}%`;
+                                            }
+                                        }
+                                    }
+                                },
                                 scales: {
-                                    y: {
+                                    x: {
                                         beginAtZero: true,
-                                        max: 100
+                                        max: 100,
+                                        title: {
+                                            display: true,
+                                            text: 'Confidence (%)'
+                                        }
                                     }
                                 }
                             }
@@ -185,5 +220,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 bsAlert.close();
             }, 5000);
         });
+    }
+    
+    // Helper function to adjust color brightness
+    function adjustColor(color, amount) {
+        // Remove the # if present
+        color = color.replace('#', '');
+        
+        // Parse the hex color
+        let r = parseInt(color.substring(0, 2), 16);
+        let g = parseInt(color.substring(2, 4), 16);
+        let b = parseInt(color.substring(4, 6), 16);
+        
+        // Adjust each channel
+        r = Math.max(0, Math.min(255, r + amount));
+        g = Math.max(0, Math.min(255, g + amount));
+        b = Math.max(0, Math.min(255, b + amount));
+        
+        // Convert back to hex
+        return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
     }
 });

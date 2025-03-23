@@ -149,6 +149,28 @@
     color: var(--bs-danger);
 }
 
+/* Emotion display styling */
+.emotion-tag {
+    display: inline-block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    background-color: rgba(var(--bs-secondary-rgb), 0.1);
+    margin-left: 0.5rem;
+}
+
+.emotion-mini-bars {
+    max-width: 100%;
+    padding: 0.5rem;
+    background-color: rgba(var(--bs-dark-rgb), 0.05);
+    border-radius: 8px;
+}
+
+.emotion-mini-item:last-child {
+    margin-bottom: 0 !important;
+}
+
 /* Feature cards */
 .feature-card {
     height: 100%;
