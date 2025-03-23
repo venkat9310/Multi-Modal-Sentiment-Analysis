@@ -241,6 +241,47 @@
                             {% endfor %}
                         </div>
                         
+                        <!-- Advanced Analysis Results -->
+                        {% if results.facial_sentiment.used_advanced_analysis and results.facial_sentiment.visualization_path %}
+                        <div class="mt-4 mb-3">
+                            <h5>Enhanced Facial Analysis:</h5>
+                            <div class="text-center mt-3">
+                                <img src="{{ url_for('static', filename=results.facial_sentiment.visualization_path.replace('static/', '')) }}" 
+                                    alt="Facial Expression Analysis" class="img-fluid rounded visualization-img">
+                            </div>
+                            
+                            <!-- Confidence Score -->
+                            {% if results.facial_sentiment.confidence is not none %}
+                            <div class="mt-3">
+                                <h6>Confidence Score:</h6>
+                                <div class="progress">
+                                    <div class="progress-bar {% if results.facial_sentiment.confidence > 0.7 %}bg-success
+                                        {% elif results.facial_sentiment.confidence > 0.4 %}bg-warning
+                                        {% else %}bg-danger{% endif %}" 
+                                        role="progressbar" 
+                                        style="width: {{ results.facial_sentiment.confidence * 100 }}%;"
+                                        aria-valuenow="{{ results.facial_sentiment.confidence * 100 }}" 
+                                        aria-valuemin="0" 
+                                        aria-valuemax="100">
+                                        {{ "%.0f"|format(results.facial_sentiment.confidence * 100) }}%
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Ambiguity Explanation -->
+                            {% if results.facial_sentiment.is_ambiguous and results.facial_sentiment.ambiguity_explanation %}
+                            <div class="mt-3">
+                                <div class="alert alert-info ambiguity-alert">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Emotion Ambiguity Detected</strong>
+                                    <p class="mb-0 mt-2">{{ results.facial_sentiment.ambiguity_explanation }}</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
                         <!-- Emotion Details Button -->
                         <div class="mt-4">
                             <button type="button" 

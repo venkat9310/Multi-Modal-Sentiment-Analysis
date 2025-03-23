@@ -30,8 +30,39 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 
-# Create temporary upload folder if it doesn't exist
+# Create temporary folders if they don't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(os.path.join('static', 'temp'), exist_ok=True)
+
+def cleanup_old_files(directory, max_age_hours=24):
+    """Remove files older than the specified age from a directory"""
+    try:
+        current_time = time.time()
+        max_age_seconds = max_age_hours * 3600
+        
+        # Check if directory exists
+        if not os.path.exists(directory):
+            return
+            
+        # List all files in the directory
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            
+            # Check if it's a file (not a directory)
+            if os.path.isfile(file_path):
+                # Get file age
+                file_age = current_time - os.path.getmtime(file_path)
+                
+                # Remove if older than max age
+                if file_age > max_age_seconds:
+                    os.remove(file_path)
+                    logger.debug(f"Cleaned up old file: {file_path}")
+    except Exception as e:
+        logger.error(f"Error cleaning up files: {str(e)}")
+
+# Clean up old temporary files on startup
+cleanup_old_files(UPLOAD_FOLDER)
+cleanup_old_files(os.path.join('static', 'temp'))
 
 def allowed_file(filename):
     """Check if the file extension is allowed"""
