@@ -10,6 +10,8 @@ matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 from sentiment_analyzer import analyze_text_sentiment
 from facial_expression_analyzer import analyze_facial_expression
+from enhanced_facial_analyzer import analyze_facial_expression as analyze_facial_expression_enhanced
+from enhanced_facial_analyzer import visualize_emotion_analysis
 from claude_analyzer import analyze_image_with_claude
 import cv2
 
@@ -168,10 +170,36 @@ def analyze():
                         session['used_claude_analysis'] = False
                         facial_sentiment, facial_emotions = analyze_facial_expression(image)
                 else:
-                    # Use OpenCV analysis
-                    logger.info("Using OpenCV for facial expression analysis")
+                    # Use enhanced facial expression analysis
+                    logger.info("Using enhanced facial expression analysis")
                     session['used_claude_analysis'] = False
-                    facial_sentiment, facial_emotions = analyze_facial_expression(image)
+                    
+                    # Try enhanced analysis first
+                    facial_sentiment, emotion_details = analyze_facial_expression_enhanced(image)
+                    
+                    if facial_sentiment is not None:
+                        # Advanced analysis succeeded
+                        facial_emotions = emotion_details['emotions']
+                        session['used_advanced_analysis'] = True
+                        
+                        # Generate and store visualization
+                        visualization = visualize_emotion_analysis(image, emotion_details)
+                        session['emotion_visualization'] = visualization
+                        
+                        # Store additional details for the UI
+                        if 'dominant_emotion' in emotion_details:
+                            session['dominant_emotion'] = emotion_details['dominant_emotion']
+                        if 'confidence' in emotion_details:
+                            session['emotion_confidence'] = emotion_details['confidence']
+                        if 'is_ambiguous' in emotion_details:
+                            session['emotion_ambiguous'] = emotion_details['is_ambiguous']
+                        if 'ambiguity_explanation' in emotion_details:
+                            session['emotion_explanation'] = emotion_details['ambiguity_explanation']
+                    else:
+                        # Fall back to basic OpenCV model
+                        logger.info("Enhanced analysis failed, falling back to basic OpenCV")
+                        session['used_advanced_analysis'] = False
+                        facial_sentiment, facial_emotions = analyze_facial_expression(image)
                 
                 # Check if a face was detected
                 if facial_sentiment is None:
