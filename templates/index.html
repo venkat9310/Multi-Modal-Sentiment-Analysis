@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmotiMap - Multi-Modal Sentiment Analysis</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-brain me-2"></i>
+                EmotiMap
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#how-it-works">How it Works</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container content-container">
+        <!-- Flash Messages -->
+        <div id="alerts-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible alert-flash fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <h1 class="display-4 fw-bold">EmotiMap</h1>
+                <p class="lead">Multi-Modal Sentiment Analysis Using Text and Facial Expressions</p>
+                <hr class="my-4">
+            </div>
+        </div>
+
+        <!-- Analysis Form -->
+        <div class="row mb-5">
+            <div class="col-lg-8 mx-auto">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">Analyze Sentiment</h3>
+                    </div>
+                    <div class="card-body analysis-form">
+                        <form id="analysis-form" action="/analyze" method="post" enctype="multipart/form-data">
+                            <div class="mb-4">
+                                <label for="text_input" class="form-label">
+                                    Text Input
+                                    <i class="fas fa-question-circle help-icon ms-1" data-bs-toggle="tooltip" title="Enter text to analyze sentiment. You can provide text, an image, or both."></i>
+                                </label>
+                                <textarea class="form-control" id="text_input" name="text_input" rows="4" placeholder="Enter text to analyze sentiment..."></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="image_file" class="form-label">
+                                    Upload Image
+                                    <i class="fas fa-question-circle help-icon ms-1" data-bs-toggle="tooltip" title="Upload an image containing a face to analyze facial expression. Supported formats: JPG, PNG."></i>
+                                </label>
+                                <input class="form-control" type="file" id="image_file" name="image_file" accept="image/jpeg,image/jpg,image/png">
+                                <div id="imageHelp" class="form-text">Supported formats: JPG, PNG (Max 16MB)</div>
+                            </div>
+                            
+                            <!-- Image Preview -->
+                            <div id="preview-container" class="preview-container d-none mt-3 mb-3">
+                                <img id="preview-image" class="preview-image img-fluid" src="#" alt="Preview">
+                                <button id="clear-image-button" class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 d-none">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg px-5">
+                                    <i class="fas fa-search me-2"></i>Analyze
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- How It Works Section -->
+        <div class="row mb-5" id="how-it-works">
+            <div class="col-12 text-center mb-4">
+                <h2 class="fw-bold">How It Works</h2>
+                <p class="lead">EmotiMap combines multiple sources of emotional data to provide comprehensive sentiment analysis.</p>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-comment-dots"></i>
+                        </div>
+                        <h4 class="card-title">Text Analysis</h4>
+                        <p class="card-text">Natural language processing algorithms analyze your text to determine sentiment polarity and emotional content.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-smile"></i>
+                        </div>
+                        <h4 class="card-title">Facial Expression</h4>
+                        <p class="card-text">Computer vision models detect faces and analyze expressions to recognize emotions like happiness, sadness, anger, and more.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <h4 class="card-title">Combined Results</h4>
+                        <p class="card-text">Multi-modal analysis combines both text and facial expression data for a more comprehensive sentiment assessment.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- About Section -->
+        <div class="row mb-5" id="about">
+            <div class="col-lg-10 mx-auto">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title text-center mb-4">About EmotiMap</h2>
+                        <p>EmotiMap is a powerful multi-modal sentiment analysis tool that combines natural language processing and computer vision to analyze emotions from both text and facial expressions. It provides a more comprehensive understanding of sentiment by analyzing multiple information channels.</p>
+                        
+                        <p>Key features:</p>
+                        <ul>
+                            <li>Text sentiment analysis using natural language processing</li>
+                            <li>Facial expression recognition using deep learning</li>
+                            <li>Combined multi-modal analysis that integrates results from different sources</li>
+                            <li>Visual representation of emotion and sentiment data</li>
+                            <li>Support for both text-only, image-only, or combined analysis</li>
+                        </ul>
+                        
+                        <p>This application was built using Flask, OpenCV, DeepFace, NLTK, and Chart.js.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer bg-dark text-light">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2023 EmotiMap - Multi-Modal Sentiment Analysis</p>
+        </div>
+    </footer>
+    
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="loading-overlay d-none">
+        <div class="spinner-border text-light loading-spinner" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

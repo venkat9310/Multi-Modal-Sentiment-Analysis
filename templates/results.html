@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Results - EmotiMap</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-brain me-2"></i>
+                EmotiMap
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/#about">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/#how-it-works">How it Works</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container content-container">
+        <!-- Flash Messages -->
+        <div id="alerts-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible alert-flash fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="display-5 fw-bold">Sentiment Analysis Results</h1>
+                <p class="lead">Here's what we found in your content</p>
+                <hr class="my-4">
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="row mb-5">
+            <!-- Visual Chart -->
+            {% if results.chart_image %}
+            <div class="col-lg-8 mx-auto mb-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h3 class="mb-0">Sentiment Overview</h3>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="chart-container">
+                            <img src="{{ results.chart_image }}" alt="Sentiment Analysis Chart" class="chart-image img-fluid">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Text Analysis Results -->
+            {% if results.text_sentiment %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-secondary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-comment-dots me-2"></i>
+                            Text Analysis Results
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        {% if results.text_input %}
+                        <div class="mb-3">
+                            <h5>Input Text:</h5>
+                            <p class="text-muted border-start border-3 ps-3 py-2">
+                                {{ results.text_input }}
+                            </p>
+                        </div>
+                        {% endif %}
+                        
+                        <h5>Sentiment Score:</h5>
+                        <div class="sentiment-score 
+                            {% if results.text_sentiment.score > 0.2 %}score-positive
+                            {% elif results.text_sentiment.score < -0.2 %}score-negative
+                            {% else %}score-neutral{% endif %}">
+                            {{ "%.2f"|format(results.text_sentiment.score) }}
+                        </div>
+                        
+                        <!-- Sentiment indicator bar -->
+                        <div class="progress">
+                            {% set offset = (results.text_sentiment.score + 1) / 2 * 100 %}
+                            <div class="progress-bar 
+                                {% if results.text_sentiment.score > 0.2 %}bg-success
+                                {% elif results.text_sentiment.score < -0.2 %}bg-danger
+                                {% else %}bg-info{% endif %}" 
+                                role="progressbar" 
+                                style="width: {{ offset }}%;">
+                            </div>
+                        </div>
+                        
+                        <p class="mt-3 sentiment-description
+                            {% if results.text_sentiment.score > 0.2 %}text-success
+                            {% elif results.text_sentiment.score < -0.2 %}text-danger
+                            {% else %}text-info{% endif %}">
+                            {{ results.text_sentiment.description }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Facial Expression Results -->
+            {% if results.facial_sentiment %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-secondary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-smile me-2"></i>
+                            Facial Expression Results
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <h5>Sentiment Score:</h5>
+                        <div class="sentiment-score 
+                            {% if results.facial_sentiment.score > 0.2 %}score-positive
+                            {% elif results.facial_sentiment.score < -0.2 %}score-negative
+                            {% else %}score-neutral{% endif %}">
+                            {{ "%.2f"|format(results.facial_sentiment.score) }}
+                        </div>
+                        
+                        <!-- Sentiment indicator bar -->
+                        <div class="progress">
+                            {% set offset = (results.facial_sentiment.score + 1) / 2 * 100 %}
+                            <div class="progress-bar 
+                                {% if results.facial_sentiment.score > 0.2 %}bg-success
+                                {% elif results.facial_sentiment.score < -0.2 %}bg-danger
+                                {% else %}bg-info{% endif %}" 
+                                role="progressbar" 
+                                style="width: {{ offset }}%;">
+                            </div>
+                        </div>
+                        
+                        <p class="mt-3 sentiment-description
+                            {% if results.facial_sentiment.score > 0.2 %}text-success
+                            {% elif results.facial_sentiment.score < -0.2 %}text-danger
+                            {% else %}text-info{% endif %}">
+                            {{ results.facial_sentiment.description }}
+                        </p>
+                        
+                        <!-- Emotion Details Button -->
+                        {% if results.facial_sentiment.emotions %}
+                        <div class="mt-4">
+                            <button type="button" 
+                                class="btn btn-outline-info emotion-details-btn" 
+                                data-emotions='{{ results.facial_sentiment.emotions|tojson }}'>
+                                <i class="fas fa-chart-pie me-2"></i>
+                                View Emotion Details
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Combined Results -->
+            {% if results.combined_sentiment %}
+            <div class="col-lg-8 mx-auto mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">
+                            <i class="fas fa-brain me-2"></i>
+                            Combined Analysis Results
+                        </h3>
+                    </div>
+                    <div class="card-body text-center">
+                        <h4>Overall Sentiment:</h4>
+                        <div class="sentiment-score 
+                            {% if results.combined_sentiment.score > 0.2 %}score-positive
+                            {% elif results.combined_sentiment.score < -0.2 %}score-negative
+                            {% else %}score-neutral{% endif %}">
+                            {{ "%.2f"|format(results.combined_sentiment.score) }}
+                        </div>
+                        
+                        <!-- Sentiment indicator bar -->
+                        <div class="progress" style="height: 20px;">
+                            {% set offset = (results.combined_sentiment.score + 1) / 2 * 100 %}
+                            <div class="progress-bar 
+                                {% if results.combined_sentiment.score > 0.2 %}bg-success
+                                {% elif results.combined_sentiment.score < -0.2 %}bg-danger
+                                {% else %}bg-info{% endif %}" 
+                                role="progressbar" 
+                                style="width: {{ offset }}%;">
+                            </div>
+                        </div>
+                        
+                        <p class="mt-3 sentiment-description
+                            {% if results.combined_sentiment.score > 0.2 %}text-success
+                            {% elif results.combined_sentiment.score < -0.2 %}text-danger
+                            {% else %}text-info{% endif %}">
+                            {{ results.combined_sentiment.description }}
+                        </p>
+                        
+                        <div class="alert 
+                            {% if results.combined_sentiment.score > 0.2 %}alert-success
+                            {% elif results.combined_sentiment.score < -0.2 %}alert-danger
+                            {% else %}alert-info{% endif %} mt-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Insights:</strong> 
+                            {% if results.combined_sentiment.score > 0.6 %}
+                                The content expresses very positive sentiments with strong positive emotions.
+                            {% elif results.combined_sentiment.score > 0.2 %}
+                                The content shows generally positive sentiment with good emotional indicators.
+                            {% elif results.combined_sentiment.score > -0.2 %}
+                                The content appears to be neutral or has balanced positive and negative aspects.
+                            {% elif results.combined_sentiment.score > -0.6 %}
+                                The content shows generally negative sentiment with some concerning emotional indicators.
+                            {% else %}
+                                The content expresses very negative sentiments with strong negative emotions.
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Try Another Analysis Button -->
+            <div class="col-12 text-center mt-4">
+                <a href="/" class="btn btn-primary btn-lg">
+                    <i class="fas fa-redo me-2"></i>
+                    Analyze Another
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer bg-dark text-light">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2023 EmotiMap - Multi-Modal Sentiment Analysis</p>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
