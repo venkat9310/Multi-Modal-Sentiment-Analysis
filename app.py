@@ -10,6 +10,7 @@ matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 from sentiment_analyzer import analyze_text_sentiment
 from facial_expression_analyzer import analyze_facial_expression
+from claude_analyzer import analyze_image_with_claude
 import cv2
 
 # Set up logging
@@ -128,6 +129,10 @@ def analyze():
         text_sentiment = None
         facial_sentiment = None
         facial_emotions = None
+        claude_analysis = None
+        
+        # Check if we have the Anthropic API key
+        has_claude_api = os.environ.get('ANTHROPIC_API_KEY') is not None
         
         # Process text input if provided
         text_input = request.form.get('text_input', '').strip()
@@ -139,15 +144,36 @@ def analyze():
         if 'image_file' in request.files:
             file = request.files['image_file']
             if file.filename != '' and allowed_file(file.filename):
-                # Convert file to OpenCV format
-                file_bytes = np.frombuffer(file.read(), np.uint8)
+                # Read file once and keep the bytes for multiple uses
+                file.seek(0)
+                file_content = file.read()
+                file_bytes = np.frombuffer(file_content, np.uint8)
                 image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
                 
-                # Analyze facial expression
-                facial_sentiment, facial_emotions = analyze_facial_expression(image)
-                logger.debug(f"Facial sentiment: {facial_sentiment}")
+                # Try Claude's analysis if API key is available
+                if has_claude_api:
+                    logger.info("Using Claude AI for advanced image analysis")
+                    claude_analysis = analyze_image_with_claude(file_content, text_input)
+                    
+                    # If Claude successfully analyzed the image
+                    if claude_analysis:
+                        facial_sentiment = claude_analysis['sentiment_score']
+                        facial_emotions = claude_analysis['emotions']
+                        logger.debug(f"Claude AI sentiment: {facial_sentiment}")
+                        session['image_uploaded_no_face'] = False
+                        session['used_claude_analysis'] = True
+                    else:
+                        # Fall back to OpenCV if Claude analysis fails
+                        logger.info("Claude analysis failed, falling back to OpenCV")
+                        session['used_claude_analysis'] = False
+                        facial_sentiment, facial_emotions = analyze_facial_expression(image)
+                else:
+                    # Use OpenCV analysis
+                    logger.info("Using OpenCV for facial expression analysis")
+                    session['used_claude_analysis'] = False
+                    facial_sentiment, facial_emotions = analyze_facial_expression(image)
                 
-                # Check if a face was detected
+                # Check if a face was detected with OpenCV when Claude is not available
                 if facial_sentiment is None:
                     flash('No human facial expression detected in the uploaded image.', 'warning')
                     # Set a flag to indicate an image was uploaded but no face was detected
@@ -173,14 +199,16 @@ def analyze():
             'facial_sentiment': {
                 'score': facial_sentiment,
                 'description': get_sentiment_description(facial_sentiment),
-                'emotions': facial_emotions
+                'emotions': facial_emotions,
+                'used_claude': session.get('used_claude_analysis', False)
             } if facial_sentiment is not None else None,
             'combined_sentiment': {
                 'score': combined_sentiment,
                 'description': get_sentiment_description(combined_sentiment)
             } if combined_sentiment is not None else None,
             'chart_image': chart_image,
-            'image_uploaded_no_face': session.get('image_uploaded_no_face', False)
+            'image_uploaded_no_face': session.get('image_uploaded_no_face', False),
+            'claude_available': has_claude_api
         }
         
         # Check if we have any data to show
